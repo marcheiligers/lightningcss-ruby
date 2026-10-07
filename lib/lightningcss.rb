@@ -6,11 +6,15 @@ require_relative "lightningcss/version"
 require_relative "lightningcss/errors"
 require_relative "lightningcss/backend"
 
-begin
-  major, minor, = RUBY_VERSION.split(".")
-  require_relative "lightningcss/#{major}.#{minor}/lightningcss"
-rescue LoadError
-  require_relative "lightningcss/lightningcss"
+if RUBY_ENGINE == "jruby"
+  require_relative "lightningcss/backend/endive"
+else
+  begin
+    major, minor, = RUBY_VERSION.split(".")
+    require_relative "lightningcss/#{major}.#{minor}/lightningcss"
+  rescue LoadError
+    require_relative "lightningcss/lightningcss"
+  end
 end
 
 require_relative "lightningcss/options"

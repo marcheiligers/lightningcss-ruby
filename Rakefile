@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/gem_tasks"
+require "English"
 require "rake/testtask"
 
 begin
@@ -110,6 +111,24 @@ rescue LoadError => e
   desc "Compile task not available (rake-compiler not installed)"
   task :compile do
     abort "rake-compiler is required: #{e.message}\n\nRun: bundle install"
+  end
+end
+
+if RUBY_ENGINE == "jruby"
+  Rake::Task[:compile].clear
+
+  desc "Build the Rust library for JRuby as WebAssembly"
+  task :compile do
+    sh "rustup", "target", "add", "wasm32-wasip1"
+
+    rustc = `rustup which rustc --toolchain stable`.strip
+    abort "rustup could not locate the stable Rust compiler" unless $CHILD_STATUS.success?
+
+    sh(
+      { "RUSTC" => rustc },
+      "rustup", "run", "stable", "cargo", "build",
+      "--manifest-path", "rust/Cargo.toml", "--release", "--locked", "--target", "wasm32-wasip1"
+    )
   end
 end
 

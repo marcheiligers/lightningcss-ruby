@@ -11,6 +11,7 @@
 mod options;
 mod scope;
 
+use std::alloc::{alloc, dealloc, handle_alloc_error, Layout};
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
@@ -377,4 +378,30 @@ pub unsafe extern "C" fn lightningcss_string_free(value: *mut c_char) {
 pub unsafe extern "C" fn lightningcss_result_free(result: LightningCssResult) {
   lightningcss_string_free(result.value);
   lightningcss_string_free(result.error);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn lightningcss_allocate(size: usize) -> *mut u8 {
+  if size == 0 {
+    return ptr::null_mut();
+  }
+
+  let layout = Layout::from_size_align(size, 8).expect("valid allocation layout");
+  let allocation = alloc(layout);
+
+  if allocation.is_null() {
+    handle_alloc_error(layout);
+  }
+
+  allocation
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn lightningcss_deallocate(allocation: *mut u8, size: usize) {
+  if allocation.is_null() || size == 0 {
+    return;
+  }
+
+  let layout = Layout::from_size_align(size, 8).expect("valid allocation layout");
+  dealloc(allocation, layout);
 }
